@@ -23,13 +23,13 @@ def dataProcess(filename='interviewData.csv', test_percent=0.2):
     df = pd.read_csv(filename)
     
     # make target
-    y_target = [int(i == 1) for i in list(df['hardbin_FT1'])]
-    y_target = np.array(y_target, 'float64')
+    y_data = [int(i == 1) for i in list(df['hardbin_FT1'])]
+    y_data = np.array(y_data, 'float64')
     
     # sample train and test dataset
     neg_index = []
     pos_index = []
-    for i, y in enumerate(y_target):
+    for i, y in enumerate(y_data):
         if y != 1:
             neg_index.append(i)
         else:
@@ -42,12 +42,12 @@ def dataProcess(filename='interviewData.csv', test_percent=0.2):
 
     # drop unnecessary features
     df = df.drop(['totaldietestseconds_WS1','wafername_WS1','ecid', 'hardbin_FT1'], 1)
-    X_data = df.to_numpy()
+    X_data_np = df.to_numpy()
 
     # Feature Normalization.
     # All features should have the same range of values (-1,1)
     sc = StandardScaler()
-    X_data = sc.fit_transform(X_data)
+    X_data = sc.fit_transform(X_data_np)
     
     # make train and test data
     upsample_times = int(len(train_pos_index) / len(train_neg_index))
@@ -56,14 +56,14 @@ def dataProcess(filename='interviewData.csv', test_percent=0.2):
     for i, v in enumerate(X_data):
         if i in train_pos_index:
             X_train.append(X_data[i, :])
-            y_train.append(y_target[i])
+            y_train.append(y_data[i])
         elif i in train_neg_index:
             for _ in range(upsample_times):
                 X_train.append(X_data[i,:])
-                y_train.append(y_target[i])
+                y_train.append(y_data[i])
         elif i in test_pos_index or i in test_neg_index:
             X_test.append(X_data[i,:])
-            y_test.append(y_target[i])
+            y_test.append(y_data[i])
     
 
     # convert the arrays to torch tensors
@@ -71,7 +71,7 @@ def dataProcess(filename='interviewData.csv', test_percent=0.2):
     X_test, y_test = torch.tensor(X_test, dtype=torch.float), torch.tensor(y_test, dtype=torch.float).unsqueeze(1)
     #print(X_train.shape)
     #print(y_train.shape)
-    return X_train, y_train, X_test, y_test
+    return X_data_np,  X_train, y_train, X_test, y_test
 
 
 def train(args, model, device, train_loader, optimizer, criterion):
@@ -122,9 +122,9 @@ class Net(nn.Module):
 def main():
     # Training settings
     parser = argparse.ArgumentParser(description='Interview Data Classification')
-    parser.add_argument('--batch-size', type=int, default=16,
+    parser.add_argument('--batch-size', type=int, default=64,
                         help='input batch size for training (default: 64)')
-    parser.add_argument('--test-batch-size', type=int, default=32,
+    parser.add_argument('--test-batch-size', type=int, default=64,
                         help='input batch size for testing (default: 64)')
     parser.add_argument('--epochs', type=int, default=20,
                         help='number of epochs to train (default: 20)')
@@ -141,7 +141,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     # perform data process
-    X_train, y_train, X_test, y_test = dataProcess(filename='interviewData.csv', test_percent=0.2)
+    _, X_train, y_train, X_test, y_test = dataProcess(filename='interviewData.csv', test_percent=0.2)
     
     # Load the train and test dataset to dataloader
     train_dataset = interviewDataset(X_train, y_train)
@@ -183,6 +183,6 @@ def main():
     if args.save_model:
         torch.save(model.state_dict(), "hw.pt")
 
+
 if __name__ == '__main__':
     main()
-    
