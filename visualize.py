@@ -3,36 +3,38 @@
 Created on Mon Jun 15 14:31:45 2020
 
 @author: zhewei
-"""
 
+--Purpose: perform dimension reduction and visualize the results
+"""
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import random
+from imblearn.over_sampling import SMOTE, BorderlineSMOTE
 
 def dataProcess(filename='interviewData.csv', test_percent=0.2):  
     # read csv file
     df = pd.read_csv(filename)
     
+    y_data = [int(i == 1) for i in list(df['hardbin_FT1'])]
     # drop unnecessary features
     df = df.drop(['totaldietestseconds_WS1','wafername_WS1','ecid', 'hardbin_FT1'], 1)
     X_data = df.to_numpy()
-
+    print("len of pos/neg in train {}/{}".format(sum(np.array(y_data) == 1), sum(np.array(y_data) == 0)))
+    X_data, y_data = SMOTE(random_state=42).fit_resample(X_data, y_data)
+    print("len of pos/neg in train {}/{}".format(sum(np.array(y_data) == 1), sum(np.array(y_data) == 0)))
     # Feature Normalization.
     # All features should have the same range of values (-1,1)
     #sc = StandardScaler()
     #X_data = sc.fit_transform(X_data_np)
     
-    return X_data
-
-
+    return X_data, y_data
 
 
 # plot PCA
 print("======== plot PCA ========")
-X_data = dataProcess()
+X_data, y_data = dataProcess()
 pca_transformer = PCA(n_components=2)
 pca_results = pca_transformer.fit_transform(X_data)
 df_results = pd.DataFrame(data = pca_results, columns = ['col_1', 'col_2'])    
@@ -49,7 +51,6 @@ colors = ['r', 'g']
 cat = ['']
 
 df = pd.read_csv('interviewData.csv')
-y_data = [int(i == 1) for i in list(df['hardbin_FT1'])]
 neg_index = []
 pos_index = []
 for i, y in enumerate(y_data):
@@ -85,7 +86,6 @@ colors = ['r', 'g']
 cat = ['']
 
 df = pd.read_csv('interviewData.csv')
-y_data = [int(i == 1) for i in list(df['hardbin_FT1'])]
 neg_index = []
 pos_index = []
 for i, y in enumerate(y_data):
