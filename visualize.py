@@ -22,8 +22,8 @@ def dataProcess(filename='interviewData.csv', test_percent=0.2):
     df = df.drop(['totaldietestseconds_WS1','wafername_WS1','ecid', 'hardbin_FT1'], 1)
     X_data = df.to_numpy()
     print("len of pos/neg in train {}/{}".format(sum(np.array(y_data) == 1), sum(np.array(y_data) == 0)))
-    X_data, y_data = SMOTE(random_state=42).fit_resample(X_data, y_data)
-    print("len of pos/neg in train {}/{}".format(sum(np.array(y_data) == 1), sum(np.array(y_data) == 0)))
+    #X_data, y_data = SMOTE(random_state=42).fit_resample(X_data, y_data)
+    #print("len of pos/neg in train {}/{}".format(sum(np.array(y_data) == 1), sum(np.array(y_data) == 0)))
     # Feature Normalization.
     # All features should have the same range of values (-1,1)
     #sc = StandardScaler()
@@ -32,7 +32,7 @@ def dataProcess(filename='interviewData.csv', test_percent=0.2):
     return X_data, y_data
 
 
-# plot PCA
+# ---------- Visualize the dist. with PCA ---------- #
 print("======== plot PCA ========")
 X_data, y_data = dataProcess()
 pca_transformer = PCA(n_components=2)
@@ -60,17 +60,17 @@ for i, y in enumerate(y_data):
         pos_index.append(i)
 
 plt.scatter(df_results.loc[pos_index, 'col_1']
-           ,df_results.loc[pos_index, 'col_2'], label='Passing', c = 'red', s = 50)
+           ,df_results.loc[pos_index, 'col_2'], label='Passing', c = 'blue', s = 50)
 plt.scatter(df_results.loc[neg_index, 'col_1']
-           ,df_results.loc[neg_index, 'col_2'], label='Failing', c = 'blue', s = 50)
-plt.grid()
+           ,df_results.loc[neg_index, 'col_2'], label='Failing', c = 'red', s = 50)
+plt.grid(color='black', linestyle='-', linewidth=1)
 plt.legend(fontsize='large')
 plt.savefig('PCA_result.jpg', dpi=250)
+plt.show()
 
-
-# plot tSNE
+# ---------- Visualize the dist. with tSNE ---------- #
 print("======== plot tSNE ========")
-tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=500)
+tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=400)
 tsne_results = tsne.fit_transform(X_data)
 df_results = pd.DataFrame(data = tsne_results, columns = ['col_1', 'col_2']) 
 
@@ -95,9 +95,10 @@ for i, y in enumerate(y_data):
         pos_index.append(i)
 
 plt.scatter(df_results.loc[pos_index, 'col_1']
-           ,df_results.loc[pos_index, 'col_2'], label='Passing', c = 'red', s = 50)
+           ,df_results.loc[pos_index, 'col_2'], label='Passing', c = 'blue', s = 50)
 plt.scatter(df_results.loc[neg_index, 'col_1']
-           ,df_results.loc[neg_index, 'col_2'], label='Failing', c = 'blue', s = 50)
-plt.grid()
+           ,df_results.loc[neg_index, 'col_2'], label='Failing', c = 'red', s = 50)
+plt.grid(color='black', linestyle='-', linewidth=1)
 plt.legend(fontsize='large')
 plt.savefig('tSNE_result.jpg', dpi=250)
+plt.show()
