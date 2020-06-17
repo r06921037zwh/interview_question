@@ -8,3 +8,10 @@
 | [main.py](https://github.com/r06921037zwh/interview_question/blob/master/main.py)| Perform classification on interviewData.csv |
 
  
+## Dependencies:
+torch >= 1.0.1
+numpy >= 1.16.2
+pandas >= 1.0.4
+scikit-learn >= 0.23.1
+seaborn >= 0.10.1
+matplotlib >= 3.0.3
