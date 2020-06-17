@@ -9,9 +9,9 @@
 
  
 ## Dependencies:
-torch >= 1.0.1
-numpy >= 1.16.2
-pandas >= 1.0.4
-scikit-learn >= 0.23.1
-seaborn >= 0.10.1
+torch >= 1.0.1 <br/>
+numpy >= 1.16.2 <br/>
+pandas >= 1.0.4 <br/>
+scikit-learn >= 0.23.1 <br/>
+seaborn >= 0.10.1 <br/>
 matplotlib >= 3.0.3
