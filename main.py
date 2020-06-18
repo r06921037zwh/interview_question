@@ -30,6 +30,12 @@ avg_train_loss = []
 avg_val_loss = []
 avg_test_loss = []
 
+# create directory for storing figures
+directory = 'figures'
+if not os.path.exists(directory):
+    print("Create dir: {}".format(directory))
+    os.makedirs(directory)
+        
 # read in data and prepare for training
 def dataProcess(filename='interviewData.csv', test_percent=0.3):  
     # read csv file
@@ -91,9 +97,9 @@ def dataProcess(filename='interviewData.csv', test_percent=0.3):
     print("Original pos/neg in data {}/{}".format(sum(np.array(y_data) == 1), sum(np.array(y_data) == 0)))
     print("Original pos/neg in train {}/{}".format(sum(np.array(y_train) == 1), sum(np.array(y_train) == 0)))
     print("Original pos/neg in test {}/{}".format(sum(np.array(y_test) == 1), sum(np.array(y_test) == 0)))
-    #X_train, y_train = TomekLinks().fit_resample(X_train, y_train)
+    X_train, y_train = TomekLinks().fit_resample(X_train, y_train)
     print("After undersampling pos/neg in train {}/{}".format(sum(np.array(y_train) == 1), sum(np.array(y_train) == 0)))
-    #X_train, y_train = SMOTE(random_state=42).fit_resample(X_train, y_train)
+    X_train, y_train = SMOTE(random_state=42).fit_resample(X_train, y_train)
     #X_train, y_train = BorderlineSMOTE(random_state=42, kind='borderline-2').fit_resample(X_train, y_train)
     print("After oversampling pos/neg in train {}/{}".format(sum(np.array(y_train) == 1), sum(np.array(y_train) == 0)))
     
@@ -170,11 +176,17 @@ def train(args, model, device, X_trains, y_trains, optimizer, criterion):
                     
                     # log the val loss
                     val_losses.append(loss.item())
-         
+                    
+    if args.save_model and avg_val_loss and sum(val_losses)/len(val_losses) < avg_val_loss[-1]:
+        print("Save Model ...")
+        torch.save(model.state_dict(), "best.pt")
     avg_train_loss.append(sum(train_losses)/len(train_losses))
     avg_val_loss.append(sum(val_losses)/len(val_losses))
         
 def test(model, device, test_loader, criterion, epoch):
+    ####################    
+    #  test the model  #
+    ####################
     model.eval()  
     with torch.no_grad():
         # try different cutting threshold for prediction
@@ -197,7 +209,7 @@ def test(model, device, test_loader, criterion, epoch):
                 if thres == 0.5:
                     test_losses.append(loss.item())
             # Print statistics 
-            print("Threshold {:.1f} : Loss: {:.6f}, Accuracy: {:.3f}%\n".format(thres, loss.item(), 100. * (correct/len(test_loader.dataset))))
+            print("\nThreshold {:.1f} : Loss: {:.6f}, Accuracy: {:.3f}%".format(thres, loss.item(), 100. * (correct/len(test_loader.dataset))))
             cal_confusion_matrix(_y_trues, _y_preds)
             y_trues.append(_y_trues)
             y_preds.append(_y_preds)
@@ -215,19 +227,14 @@ def cal_confusion_matrix(y_true, y_pred):
     #print(y_true)
     #print(y_pred)
     tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0,1]).ravel()
-    precision = tp/(tp+fp+1e-4)
-    recall = tp/(tp+fn+1e-4)
+    precision = tp/(tp+fp+1e-9)
+    recall = tp/(tp+fn+1e-9)
     print("Accuracy : {}".format((tn+tp)/(tn+fp+fn+tp)))
     print("Precision : {}".format(precision))
     print("Recall : {}".format(recall))
-    print("F1 score : {}".format(2./(1.0/(precision+1e-4)+1.0/(recall+1e-4)+1e-4)))
+    print("F1 score : {}".format(2./(1.0/(precision+1e-9)+1.0/(recall+1e-9)+1e-9)))
 
 def plot_confusion_matrix(y_trues, y_preds, epoch):
-    # create directory for storing figures
-    directory = 'figures'
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    
     # different thresholds for prediction
     thres = np.arange(0.1,1,0.1)
     fig = plt.figure(figsize=(16,16))
@@ -241,7 +248,7 @@ def plot_confusion_matrix(y_trues, y_preds, epoch):
         ax.set_title("Threshold = {:.1f}".format(thres[idx]))
         ax.set_xlabel("Predict Label")
         ax.set_ylabel("True Label")
-    plt.savefig(os.path.join(directory,"{}ep_confusion_mat.jpg".format(str(epoch))))
+    plt.savefig(os.path.join(directory,"ep{}_confusion_mat.jpg".format(str(epoch))))
     plt.show()   
     
 def plot_loss_curve(train_loss, val_loss, test_loss):
@@ -253,7 +260,7 @@ def plot_loss_curve(train_loss, val_loss, test_loss):
     plt.ylabel("Loss")
     plt.grid()
     plt.legend()
-    plt.savefig("loss_curve.jpg")
+    plt.savefig(os.path.join(directory, "loss_curve.jpg"))
     plt.show()
     
 def main():
@@ -263,16 +270,20 @@ def main():
                         help='input batch size for training (default: 64)')
     parser.add_argument('--test-batch-size', type=int, default=64,
                         help='input batch size for testing (default: 64)')
-    parser.add_argument('--epochs', type=int, default=20,
+    parser.add_argument('--epochs', type=int, default=30,
                         help='number of epochs to train (default: 20)')
     parser.add_argument('--lr', type=float, default=0.001,
                         help='learning rate (default: 0.005)')
-    parser.add_argument('--gamma', type=float, default=0.9,
-                        help='Learning rate step gamma (default: 0.7)')
+    parser.add_argument('--gamma', type=float, default=0.95,
+                        help='Learning rate step gamma (default: 0.9)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                         help='how many batches to wait before logging training status')
-    parser.add_argument('--save-model', action='store_true', default=False,
+    parser.add_argument('--save-model', action='store_true', default=True,
                         help='Saving the current Model')
+    parser.add_argument('--load-model', action='store_true', default=False,
+                        help='Loading into the current Model')
+    parser.add_argument('--model_name', type=str, default='best.pt',
+                        help='Model name for loading')
     
     args = parser.parse_args()
     
@@ -300,6 +311,10 @@ def main():
     model = net(X_train.shape[1]).to(device)
     print(model)
     
+    # Check for model loading
+    if args.load_model:
+        model.load_state_dict(torch.load(args.model_name))
+        
     # Binary Cross-entropy
     criterion = torch.nn.BCELoss(reduction='mean')   
     
@@ -326,9 +341,9 @@ def main():
     
     # plot loss curve
     #plot_loss_curve(avg_train_loss, avg_val_loss, avg_test_loss)
-    
+    '''
     if args.save_model:
         torch.save(model.state_dict(), "hw.pt")
-    
+    '''
 if __name__ == '__main__':
     main()

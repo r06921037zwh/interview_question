@@ -7,10 +7,17 @@ Created on Tue Jun 16 22:46:22 2020
 
 import pandas as pd
 import numpy as np
+import os
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.ensemble import ExtraTreesClassifier
 
+# create directory for storing figures
+directory = 'figures'
+if not os.path.exists(directory):
+    print("Create dir: {}".format(directory))
+    os.makedirs(directory)    
+    
 def feature_importance(filename='interviewData.csv', test_percent=0.3):  
     # read csv file
     df = pd.read_csv(filename)
@@ -39,7 +46,7 @@ def feature_importance(filename='interviewData.csv', test_percent=0.3):
             color="r", align="center")
     plt.xticks(range(len(indices)), feature_names[indices], rotation=90)
     plt.xlim([-1, len(indices)])
-    plt.savefig("Top20_Feature_Imp.jpg")
+    plt.savefig(os.path.join(directory, "Top20_Feature_Imp.jpg"))
     plt.show()
     
     
@@ -59,14 +66,13 @@ def feature_importance(filename='interviewData.csv', test_percent=0.3):
         if i == 2:
             sns.distplot(X_data[pos_index, v], norm_hist=True, color='blue', label='Pass') 
             sns.distplot(X_data[neg_index, v], norm_hist=True, color='red', label='Fail')
-            #ax.set_ylim(0, 0.006)
         else:
             sns.distplot(X_data[pos_index, v], bins=50, norm_hist=True, color='blue', label='Pass') 
             sns.distplot(X_data[neg_index, v], bins=50, norm_hist=True, color='red', label='Fail')
         ax.legend()
         ax.set_title(feature_names[v])
     fig.suptitle('Top 3 Feature Importance Dist.', fontsize=24)
-    plt.savefig("Top3_Feature_Imp_dist.jpg")
+    plt.savefig(os.path.join(directory,"Top3_Feature_Imp_dist.jpg"))
 
 if __name__ == '__main__':
     feature_importance()
